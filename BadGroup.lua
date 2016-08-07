@@ -119,7 +119,7 @@ end
 function BadGroup:CountGroupMembers(event)
 	numMembers = GetNumGroupMembers()
 	if (numMembers > 0) then
-		groupType = (IsInRaid() and "raid" or "party")
+		groupType = (IsInRaid() and ("raid" or "party"))	
 		return
 	end
 	
@@ -177,6 +177,10 @@ function BadGroup:GetPetOwner(srcGUID)
 end
 
 function BadGroup:ClassColoredName(srcName)
+	if string.sub(srcName,string.find(srcName,"-")+1,string.len(srcName)) == GetRealmName() then
+		srcName=string.sub(srcName,1,string.find(srcName,"-")-1)
+	end
+
 	local _, playerClass = UnitClass(srcName)
 	local classColor = RAID_CLASS_COLORS[playerClass]
 	return string.format("|cff%02x%02x%02x%s|r", classColor.r * 255, classColor.g * 255, classColor.b * 255, srcName)
@@ -224,6 +228,7 @@ function BadGroup:ChatOutput(srcName, srcGUID, srcRaidFlags, dstName, dstRaidFla
 	else
 		message = ("%s used by %s's pet %s"):format(spellLink, owner, srcName)
 		prvtMessage = ("%s used by %s's pet %s%s|r"):format(spellLink, self:ClassColoredName(owner), greenColor, srcName)
+		SendChatMessage(prvtMessage,"WHISPER",nil,owner)
 	end
 
 	if (dstName) then
@@ -302,7 +307,7 @@ function BadGroup:RemoveTank(tankName)
 	for i, name in ipairs(BadGroupSV.customTanks) do
 		if (tankName == name) then
 			table.remove(BadGroupSV.customTanks, i)
-			self:Print("Removed " .. tankName .. " from the list.")
+			self:Print("Removed " .. self:ClassColoredName(tankName) .. " from the list.")
 		end
 	end
 end
@@ -324,6 +329,9 @@ function BadGroup:Print(...)
 end
 
 function BadGroup.Command(str, editbox)
+	local homeRealm = GetRealmName()
+	homeRealm = homeRealm:gsub("%s+", "")
+	
 	if (str == "social") then
 		BadGroupSV.socialOutput = true
 		BadGroup:Print("Output set to " .. yellowColor .. "social|r.")
@@ -343,8 +351,6 @@ function BadGroup.Command(str, editbox)
 			BadGroup:Print("You have to target something")
 		else
 			local name,realm=UnitName("target")
-			local homeRealm = GetRealmName()
-			homeRealm = homeRealm:gsub("%s+", "")
 			BadGroup:AddTank(name.."-"..(realm or homeRealm))
 		end
 	elseif (str == "del") then
@@ -352,7 +358,7 @@ function BadGroup.Command(str, editbox)
 			BadGroup:Print("You have to target something")
 		else
 			local name,realm=UnitName("target")
-			BadGroup:RemoveTank(name..realm)
+			BadGroup:RemoveTank(name.."-"..(realm or homeRealm))
 		end
 	elseif (str == "wipe") then
 		BadGroup:WipeTanks()
