@@ -119,7 +119,7 @@ end
 function BadGroup:CountGroupMembers(event)
 	numMembers = GetNumGroupMembers()
 	if (numMembers > 0) then
-		groupType = (IsInRaid() and ("raid" or "party"))	
+		groupType = ((IsInRaid() and "raid") or "party")	
 		return
 	end
 	
